@@ -9,6 +9,16 @@ platform's official API (or public RSS, for podcasts) — no login-wall
 scraping, so nothing here violates platform ToS. Every script writes a JSON
 result to `output/` and prints it to stdout.
 
+**Note for Reddit API reviewers:** `scripts/reddit_fetch.py` is the Reddit
+piece of this project. It's one of four independent, read-only connectors
+(YouTube, podcasts, Reddit, X) that make up a broader research tool, not a
+standalone "Reddit bot" — the other three scripts don't touch Reddit's API
+and are included here only because they share the same output format and
+downstream agent. The Reddit connector only searches public posts/comments
+via PRAW (official API) for a small set of named subreddits and never
+posts, votes, follows, or messages — see `reddit_fetch.py` for the full
+implementation.
+
 ## Setup
 
 ```powershell
