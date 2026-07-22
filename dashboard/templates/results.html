@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="results-header">
+  <div>
+    <h2>{{ company }}</h2>
+    <p class="meta">Selected Date Range: {{ after or "any" }} &ndash; {{ before or "any" }} &middot; generated {{ generated_at }}</p>
+    <form action="/search" method="post" class="loading-trigger date-range-form">
+      <input type="hidden" name="company" value="{{ company }}">
+      <div class="date-range-fields">
+        <label class="checkbox-label">
+          <input type="checkbox" class="last-7-days-checkbox">
+          Last 7 days
+        </label>
+        <div class="date-range-inputs">
+          <label>
+            From
+            <input type="date" name="after" value="{{ after or '' }}">
+          </label>
+          <label>
+            To
+            <input type="date" name="before" value="{{ before or '' }}">
+          </label>
+        </div>
+      </div>
+      <button type="submit" class="button secondary">Update range</button>
+    </form>
+  </div>
+  <div class="results-actions">
+    <a href="/" class="button secondary">New search</a>
+    <a href="/export.md" class="button">Download as Markdown</a>
+  </div>
+</div>
+
+<div class="top-panel">
+  <div class="panel-box">
+    <h3>Sentiment Summary</h3>
+    <p class="sort-note">AI-generated from the top 5 items per source below &mdash; verify figures against the source cards, don't cite this box directly.</p>
+    <ul class="summary-bullets">
+      {% for bullet in summary_bullets %}
+        <li>{{ bullet }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="panel-box">
+    <h3>Stock Price vs. Social Sentiment{% if ticker %} ({{ ticker }}){% endif %}</h3>
+    {% if not chart_data.prices and not chart_data.sentiment %}
+      <p class="empty">No price or sentiment data available for this window.</p>
+    {% else %}
+      <canvas id="sentiment-chart" height="220"></canvas>
+    {% endif %}
+  </div>
+</div>
+
+<div class="columns">
+
+  <section class="column">
+    <h3>YouTube ({{ youtube_top|length + youtube_rest|length }})</h3>
+    <p class="sort-note">Sorted by view count</p>
+    {% if youtube_error %}
+      <p class="error">{{ youtube_error }}</p>
+    {% endif %}
+    {% if not youtube_top and not youtube_error %}
+      <p class="empty">No matching videos.</p>
+    {% endif %}
+    {% for item in youtube_top %}
+      <article class="card">
+        <h4><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h4>
+        <p class="meta">
+          {{ item.view_count|format_count }} views &middot; {{ item.channel_title }} &middot; {{ item.published_at }}
+          {%- if item.transcript %} &middot; {{ item.transcript_language }}{% if item.transcript_translated_en %}, English translation available{% endif %}
+          {%- else %} &middot; No transcript{% endif %}
+        </p>
+        {% if item.transcript %}
+          <details>
+            <summary>Transcript</summary>
+            <p class="transcript">{{ item.transcript }}</p>
+            {% if item.transcript_translated_en %}
+              <p class="transcript"><strong>English translation:</strong><br>{{ item.transcript_translated_en }}</p>
+            {% endif %}
+          </details>
+        {% endif %}
+      </article>
+    {% endfor %}
+    {% if youtube_rest %}
+      <button class="see-more-btn" data-target="youtube-rest">See more ({{ youtube_rest|length }})</button>
+      <div class="hidden-rest" id="youtube-rest" hidden>
+        {% for item in youtube_rest %}
+          <article class="card">
+            <h4><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h4>
+            <p class="meta">
+              {{ item.view_count|format_count }} views &middot; {{ item.channel_title }} &middot; {{ item.published_at }}
+              {%- if item.transcript %} &middot; {{ item.transcript_language }}{% if item.transcript_translated_en %}, English translation available{% endif %}
+              {%- else %} &middot; No transcript{% endif %}
+            </p>
+            {% if item.transcript %}
+              <details>
+                <summary>Transcript</summary>
+                <p class="transcript">{{ item.transcript }}</p>
+                {% if item.transcript_translated_en %}
+                  <p class="transcript"><strong>English translation:</strong><br>{{ item.transcript_translated_en }}</p>
+                {% endif %}
+              </details>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="column">
+    <h3>Podcasts ({{ podcast_top|length + podcast_rest|length }})</h3>
+    <p class="sort-note">Sorted by date (podcast RSS doesn't publish play counts)</p>
+    {% if not podcast_top %}
+      <p class="empty">No matching episodes.</p>
+    {% endif %}
+    {% for item in podcast_top %}
+      <article class="card" data-audio-url="{{ item.audio_url or '' }}">
+        <h4>
+          {% if item.episode_link %}<a href="{{ item.episode_link }}" target="_blank">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
+        </h4>
+        <p class="meta">{{ item.show }} &middot; {{ item.published_at }}{% if not item.audio_url %} &middot; No audio URL{% endif %}</p>
+        <details>
+          <summary>Show notes</summary>
+          <p class="transcript">{{ item.summary|safe }}</p>
+        </details>
+        {% if item.audio_url %}
+          <button class="transcribe-btn" onclick="transcribeEpisode(this)">Transcribe (slow, runs locally)</button>
+          <div class="transcript-result"></div>
+        {% endif %}
+      </article>
+    {% endfor %}
+    {% if podcast_rest %}
+      <button class="see-more-btn" data-target="podcast-rest">See more ({{ podcast_rest|length }})</button>
+      <div class="hidden-rest" id="podcast-rest" hidden>
+        {% for item in podcast_rest %}
+          <article class="card" data-audio-url="{{ item.audio_url or '' }}">
+            <h4>
+              {% if item.episode_link %}<a href="{{ item.episode_link }}" target="_blank">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %}
+            </h4>
+            <p class="meta">{{ item.show }} &middot; {{ item.published_at }}{% if not item.audio_url %} &middot; No audio URL{% endif %}</p>
+            <details>
+              <summary>Show notes</summary>
+              <p class="transcript">{{ item.summary|safe }}</p>
+            </details>
+            {% if item.audio_url %}
+              <button class="transcribe-btn" onclick="transcribeEpisode(this)">Transcribe (slow, runs locally)</button>
+              <div class="transcript-result"></div>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="column">
+    <h3>Reddit ({{ reddit_top|length + reddit_rest|length }})</h3>
+    <p class="sort-note">Sorted by score</p>
+    {% if reddit_status %}
+      <p class="empty">{{ reddit_status }}</p>
+    {% endif %}
+    {% if not reddit_top and not reddit_status %}
+      <p class="empty">No matching threads.</p>
+    {% endif %}
+    {% for item in reddit_top %}
+      <article class="card">
+        <h4><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h4>
+        <p class="meta">r/{{ item.subreddit }} &middot; {{ item.author }} &middot; {{ item.published_date }} &middot; {{ item.score }} pts</p>
+        {% if item.selftext %}
+          <details>
+            <summary>Post text</summary>
+            <p class="transcript">{{ item.selftext }}</p>
+          </details>
+        {% endif %}
+        {% if item.top_comments %}
+          <details>
+            <summary>Top comments ({{ item.top_comments|length }})</summary>
+            {% for c in item.top_comments %}
+              <p class="transcript"><strong>{{ c.author }}</strong> ({{ c.score }} pts): {{ c.body }}</p>
+            {% endfor %}
+          </details>
+        {% endif %}
+      </article>
+    {% endfor %}
+    {% if reddit_rest %}
+      <button class="see-more-btn" data-target="reddit-rest">See more ({{ reddit_rest|length }})</button>
+      <div class="hidden-rest" id="reddit-rest" hidden>
+        {% for item in reddit_rest %}
+          <article class="card">
+            <h4><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h4>
+            <p class="meta">r/{{ item.subreddit }} &middot; {{ item.author }} &middot; {{ item.published_date }} &middot; {{ item.score }} pts</p>
+            {% if item.selftext %}
+              <details>
+                <summary>Post text</summary>
+                <p class="transcript">{{ item.selftext }}</p>
+              </details>
+            {% endif %}
+            {% if item.top_comments %}
+              <details>
+                <summary>Top comments ({{ item.top_comments|length }})</summary>
+                {% for c in item.top_comments %}
+                  <p class="transcript"><strong>{{ c.author }}</strong> ({{ c.score }} pts): {{ c.body }}</p>
+                {% endfor %}
+              </details>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="column">
+    <h3>X / Twitter ({{ twitter_top|length + twitter_rest|length }})</h3>
+    <p class="sort-note">Sorted by impressions (or engagement if impressions unavailable)</p>
+    {% if twitter_status %}
+      <p class="empty">{{ twitter_status }}</p>
+    {% endif %}
+    {% if not twitter_top and not twitter_status %}
+      <p class="empty">No matching posts.</p>
+    {% endif %}
+    {% for item in twitter_top %}
+      <article class="card">
+        <h4><a href="{{ item.url }}" target="_blank">@{{ item.author_username }}</a></h4>
+        <p class="meta">
+          {{ item.author_name }} &middot; {{ item.created_at }}
+          {%- if item.metrics %}
+            &middot; {{ item.metrics.like_count|format_count }} likes
+            &middot; {{ item.metrics.retweet_count|format_count }} retweets
+          {%- endif %}
+        </p>
+        <p class="transcript">{{ item.text }}</p>
+      </article>
+    {% endfor %}
+    {% if twitter_rest %}
+      <button class="see-more-btn" data-target="twitter-rest">See more ({{ twitter_rest|length }})</button>
+      <div class="hidden-rest" id="twitter-rest" hidden>
+        {% for item in twitter_rest %}
+          <article class="card">
+            <h4><a href="{{ item.url }}" target="_blank">@{{ item.author_username }}</a></h4>
+            <p class="meta">
+              {{ item.author_name }} &middot; {{ item.created_at }}
+              {%- if item.metrics %}
+                &middot; {{ item.metrics.like_count|format_count }} likes
+                &middot; {{ item.metrics.retweet_count|format_count }} retweets
+              {%- endif %}
+            </p>
+            <p class="transcript">{{ item.text }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+async function transcribeEpisode(btn) {
+  const card = btn.closest(".card");
+  const audioUrl = card.dataset.audioUrl;
+  const resultBox = card.querySelector(".transcript-result");
+  btn.disabled = true;
+  btn.textContent = "Transcribing... (this can take several minutes)";
+  resultBox.textContent = "";
+  try {
+    const resp = await fetch("/transcribe", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({audio_url: audioUrl}),
+    });
+    const data = await resp.json();
+    if (data.error) {
+      resultBox.innerHTML = `<p class="error">${data.error}</p>`;
+      btn.textContent = "Retry transcription";
+      btn.disabled = false;
+    } else {
+      resultBox.innerHTML = `<p class="transcript"><strong>Transcript:</strong><br>${data.transcript}</p>`;
+      btn.remove();
+    }
+  } catch (e) {
+    resultBox.innerHTML = `<p class="error">${e}</p>`;
+    btn.textContent = "Retry transcription";
+    btn.disabled = false;
+  }
+}
+
+document.querySelectorAll(".see-more-btn").forEach(function (btn) {
+  btn.addEventListener("click", function () {
+    const target = document.getElementById(btn.dataset.target);
+    const expanded = !target.hidden;
+    target.hidden = expanded;
+    btn.textContent = expanded
+      ? btn.textContent.replace("Show less", "See more")
+      : btn.textContent.replace("See more", "Show less");
+  });
+});
+
+const chartData = {{ chart_data|tojson }};
+if (chartData.prices.length || chartData.sentiment.length) {
+  const allDates = Array.from(new Set([
+    ...chartData.prices.map(p => p.date),
+    ...chartData.sentiment.map(s => s.date),
+  ])).sort();
+  const priceByDate = Object.fromEntries(chartData.prices.map(p => [p.date, p.close]));
+  const sentimentByDate = Object.fromEntries(chartData.sentiment.map(s => [s.date, s.score]));
+
+  new Chart(document.getElementById("sentiment-chart"), {
+    type: "line",
+    data: {
+      labels: allDates,
+      datasets: [
+        {
+          label: "Stock Price ($)",
+          data: allDates.map(d => priceByDate[d] ?? null),
+          borderColor: "#003C60",
+          backgroundColor: "#003C60",
+          yAxisID: "y",
+          spanGaps: true,
+          tension: 0.15,
+        },
+        {
+          label: "Social Sentiment",
+          data: allDates.map(d => sentimentByDate[d] ?? null),
+          borderColor: "#4da3ff",
+          backgroundColor: "#4da3ff",
+          yAxisID: "y1",
+          spanGaps: true,
+          tension: 0.15,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: "index", intersect: false },
+      scales: {
+        y: { type: "linear", position: "left", title: { display: true, text: "Price ($)" } },
+        y1: {
+          type: "linear", position: "right", min: -1, max: 1,
+          title: { display: true, text: "Sentiment (-1 to 1)" },
+          grid: { drawOnChartArea: false },
+        },
+      },
+    },
+  });
+}
+</script>
+{% endblock %}

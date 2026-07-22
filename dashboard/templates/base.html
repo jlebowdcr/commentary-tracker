@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Commentary Tracker{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1><a href="/">Commentary Tracker</a></h1>
+    <p class="tagline">YouTube + podcast staging for a company and date range</p>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <div id="loading-overlay" class="loading-overlay" hidden>
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="progress-bar"><div class="progress-bar-fill"></div></div>
+    <p>Searching YouTube, podcasts, Reddit, and X&hellip;</p>
+  </div>
+
+  <script>
+    document.querySelectorAll("form.loading-trigger").forEach(function (form) {
+      form.addEventListener("submit", function () {
+        document.getElementById("loading-overlay").hidden = false;
+        // Browser keeps painting the current document (including this overlay)
+        // until the response fully arrives and replaces the page, so no
+        // fetch/AJAX plumbing is needed for this to stay visible through the wait.
+      });
+    });
+
+    // X/Twitter's search endpoint only sees the last 7 days -- checking this
+    // box sets the date range to exactly that window so the backend's
+    // last-7-days check (server-side, not just this checkbox) actually
+    // passes. Fields are locked while checked so a manual edit can't quietly
+    // put the range back outside the window without the checkbox knowing.
+    document.querySelectorAll(".last-7-days-checkbox").forEach(function (checkbox) {
+      checkbox.addEventListener("change", function () {
+        const form = checkbox.closest("form");
+        const afterInput = form.querySelector('[name="after"]');
+        const beforeInput = form.querySelector('[name="before"]');
+        if (checkbox.checked) {
+          const fmt = (d) => d.toISOString().slice(0, 10);
+          const today = new Date();
+          const weekAgo = new Date();
+          weekAgo.setDate(today.getDate() - 7);
+          afterInput.value = fmt(weekAgo);
+          beforeInput.value = fmt(today);
+        }
+        afterInput.readOnly = checkbox.checked;
+        beforeInput.readOnly = checkbox.checked;
+      });
+    });
+  </script>
+</body>
+</html>

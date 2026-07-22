@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<form action="/search" method="post" class="search-form loading-trigger">
+  <label>
+    Company or ticker
+    <input type="text" name="company" placeholder="e.g. MercadoLibre or MELI" required autofocus>
+  </label>
+  <label class="checkbox-label">
+    <input type="checkbox" class="last-7-days-checkbox">
+    Last 7 days (adds X/Twitter)
+  </label>
+  <div class="date-range">
+    <label>
+      From
+      <input type="date" name="after">
+    </label>
+    <label>
+      To
+      <input type="date" name="before">
+    </label>
+  </div>
+  <button type="submit">Search</button>
+</form>
+<p class="hint">
+  Searches YouTube (search API + transcripts), a curated list of finance
+  podcasts, and Reddit/X when credentials are configured
+  (<a href="https://github.com/jlebowdcr/commentary-tracker" target="_blank">details</a>).
+  Podcast episodes are matched by keyword in title/summary; full transcription
+  happens on demand per episode since it's slow. X/Twitter only ever covers
+  the last 7 days, so it's only included when the date range is set to
+  exactly that (use the "Last 7 days" button) -- otherwise it's left out
+  rather than showing a stale or empty result.
+</p>
+{% endblock %}

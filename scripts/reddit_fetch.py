@@ -10,11 +10,51 @@ Usage:
   python reddit_fetch.py --query "management credibility" --subreddit investing --max 10
 """
 import argparse
+import os
 
 import praw
 
-from common import emit, require_env
-import os
+from common import emit, load_env, require_env
+
+
+def has_credentials() -> bool:
+    load_env()
+    return all(os.environ.get(k) for k in ("REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET", "REDDIT_USER_AGENT"))
+
+
+def search_reddit(query: str, subreddit: str = "all", max_results: int = 10,
+                   comments_per_thread: int = 5) -> list[dict]:
+    """Caller is responsible for checking has_credentials() first."""
+    reddit = praw.Reddit(
+        client_id=os.environ["REDDIT_CLIENT_ID"],
+        client_secret=os.environ["REDDIT_CLIENT_SECRET"],
+        user_agent=os.environ["REDDIT_USER_AGENT"],
+    )
+    reddit.read_only = True
+
+    items = []
+    for submission in reddit.subreddit(subreddit).search(query, limit=max_results, sort="new"):
+        submission.comments.replace_more(limit=0)
+        top_comments = [
+            {
+                "author": str(c.author) if c.author else "[deleted]",
+                "body": c.body,
+                "score": c.score,
+                "created_utc": c.created_utc,
+            }
+            for c in submission.comments[:comments_per_thread]
+        ]
+        items.append({
+            "title": submission.title,
+            "url": f"https://www.reddit.com{submission.permalink}",
+            "subreddit": str(submission.subreddit),
+            "author": str(submission.author) if submission.author else "[deleted]",
+            "created_utc": submission.created_utc,
+            "score": submission.score,
+            "selftext": submission.selftext,
+            "top_comments": top_comments,
+        })
+    return items
 
 
 def main():
@@ -27,36 +67,7 @@ def main():
     args = parser.parse_args()
 
     require_env("REDDIT_CLIENT_ID", "REDDIT_CLIENT_SECRET", "REDDIT_USER_AGENT")
-    reddit = praw.Reddit(
-        client_id=os.environ["REDDIT_CLIENT_ID"],
-        client_secret=os.environ["REDDIT_CLIENT_SECRET"],
-        user_agent=os.environ["REDDIT_USER_AGENT"],
-    )
-    reddit.read_only = True
-
-    items = []
-    for submission in reddit.subreddit(args.subreddit).search(args.query, limit=args.max, sort="new"):
-        submission.comments.replace_more(limit=0)
-        top_comments = [
-            {
-                "author": str(c.author) if c.author else "[deleted]",
-                "body": c.body,
-                "score": c.score,
-                "created_utc": c.created_utc,
-            }
-            for c in submission.comments[: args.comments_per_thread]
-        ]
-        items.append({
-            "title": submission.title,
-            "url": f"https://www.reddit.com{submission.permalink}",
-            "subreddit": str(submission.subreddit),
-            "author": str(submission.author) if submission.author else "[deleted]",
-            "created_utc": submission.created_utc,
-            "score": submission.score,
-            "selftext": submission.selftext,
-            "top_comments": top_comments,
-        })
-
+    items = search_reddit(args.query, args.subreddit, args.max, args.comments_per_thread)
     emit("reddit", args.query, items)
 
 

@@ -8,6 +8,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = ROOT / "output"
 
+# Windows consoles default to a legacy codepage (e.g. cp1252) that can't
+# encode characters commonly found in podcast/YouTube text (smart quotes,
+# em-dashes, etc). Force stdout/stderr to UTF-8 so printing never crashes.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+
 
 def load_env():
     """Load key=value pairs from commentary-tracker/.env into os.environ."""

@@ -1,0 +1,37 @@
+[
+  {
+    "name": "Money Stuff",
+    "feed": "https://omny.fm/shows/money-stuff-the-podcast/playlists/podcast.rss",
+    "description": "Bloomberg Opinion's Matt Levine and Katie Greifeld on markets, deals, and financial weirdness."
+  },
+  {
+    "name": "Odd Lots",
+    "feed": "https://omny.fm/shows/odd-lots/playlists/podcast.rss",
+    "description": "Bloomberg's Joe Weisenthal and Tracy Alloway on macro, markets, and how things actually work."
+  },
+  {
+    "name": "Masters in Business",
+    "feed": "https://omny.fm/shows/masters-in-business/playlists/podcast.rss",
+    "description": "Bloomberg's Barry Ritholtz interviews people and ideas that shape markets and investing."
+  },
+  {
+    "name": "Business Breakdowns",
+    "feed": "https://breakdowns.libsyn.com/rss",
+    "description": "Colossus network -- deep-dive breakdowns of individual businesses with investors who know them well."
+  },
+  {
+    "name": "Invest Like the Best",
+    "feed": "https://feeds.megaphone.fm/investlikethebest",
+    "description": "Colossus network -- Patrick O'Shaughnessy interviews top investors, founders, and experts."
+  },
+  {
+    "name": "Animal Spirits",
+    "feed": "https://feeds.megaphone.fm/TCP6464651487",
+    "description": "Michael Batnick and Ben Carlson (Ritholtz Wealth Management) on markets and investing."
+  },
+  {
+    "name": "We Study Billionaires",
+    "feed": "https://feeds.megaphone.fm/PPLLC8974708240",
+    "description": "The Investor's Podcast Network's flagship value-investing show."
+  }
+]

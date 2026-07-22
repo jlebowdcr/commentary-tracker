@@ -1,0 +1,3 @@
+# Optional: only needed for local (free, offline) podcast transcription.
+# Also requires ffmpeg on PATH.
+openai-whisper
