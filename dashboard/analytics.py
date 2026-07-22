@@ -1,16 +1,13 @@
 """
-Dashboard analytics: ticker resolution + stock price (Yahoo), sentiment
-scoring (VADER, local/free), and LLM-based sentiment-summary synthesis
-(Claude API).
+Dashboard analytics: ticker resolution + stock price (Yahoo), and
+LLM-based sentiment-summary synthesis (Claude API).
 """
 import os
 from datetime import date, datetime
 
 import requests
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 _UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-_analyzer = SentimentIntensityAnalyzer()
 
 
 def resolve_ticker(company: str) -> str | None:
@@ -63,27 +60,6 @@ def fetch_stock_prices(ticker: str, after: date | None, before: date | None) -> 
         d = datetime.utcfromtimestamp(ts).date().isoformat()
         prices.append({"date": d, "close": round(close, 2)})
     return prices
-
-
-def score_sentiment(text: str) -> float:
-    """VADER compound score in [-1, 1]. Free, local, no API call."""
-    if not text:
-        return 0.0
-    return _analyzer.polarity_scores(text[:5000])["compound"]
-
-
-def daily_sentiment_series(dated_items: list[tuple[str, str]]) -> list[dict]:
-    """dated_items: list of (iso_date, text). Returns [{date, score}] sorted
-    by date, averaging same-day scores."""
-    by_day: dict[str, list[float]] = {}
-    for d, text in dated_items:
-        if not d:
-            continue
-        by_day.setdefault(d, []).append(score_sentiment(text))
-    return [
-        {"date": d, "score": round(sum(scores) / len(scores), 3)}
-        for d, scores in sorted(by_day.items())
-    ]
 
 
 def synthesize_summary(company: str, after: str | None, before: str | None,

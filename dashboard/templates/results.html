@@ -42,9 +42,9 @@
     </ul>
   </div>
   <div class="panel-box">
-    <h3>Stock Price vs. Social Sentiment{% if ticker %} ({{ ticker }}){% endif %}</h3>
-    {% if not chart_data.prices and not chart_data.sentiment %}
-      <p class="empty">No price or sentiment data available for this window.</p>
+    <h3>Stock Price{% if ticker %} ({{ ticker }}){% endif %}</h3>
+    {% if not chart_data.prices %}
+      <p class="empty">No price data available for this window.</p>
     {% else %}
       <canvas id="sentiment-chart" height="220"></canvas>
     {% endif %}
@@ -295,13 +295,9 @@ document.querySelectorAll(".see-more-btn").forEach(function (btn) {
 });
 
 const chartData = {{ chart_data|tojson }};
-if (chartData.prices.length || chartData.sentiment.length) {
-  const allDates = Array.from(new Set([
-    ...chartData.prices.map(p => p.date),
-    ...chartData.sentiment.map(s => s.date),
-  ])).sort();
+if (chartData.prices.length) {
+  const allDates = chartData.prices.map(p => p.date);
   const priceByDate = Object.fromEntries(chartData.prices.map(p => [p.date, p.close]));
-  const sentimentByDate = Object.fromEntries(chartData.sentiment.map(s => [s.date, s.score]));
 
   new Chart(document.getElementById("sentiment-chart"), {
     type: "line",
@@ -317,15 +313,6 @@ if (chartData.prices.length || chartData.sentiment.length) {
           spanGaps: true,
           tension: 0.15,
         },
-        {
-          label: "Social Sentiment",
-          data: allDates.map(d => sentimentByDate[d] ?? null),
-          borderColor: "#4da3ff",
-          backgroundColor: "#4da3ff",
-          yAxisID: "y1",
-          spanGaps: true,
-          tension: 0.15,
-        },
       ],
     },
     options: {
@@ -333,11 +320,6 @@ if (chartData.prices.length || chartData.sentiment.length) {
       interaction: { mode: "index", intersect: false },
       scales: {
         y: { type: "linear", position: "left", title: { display: true, text: "Price ($)" } },
-        y1: {
-          type: "linear", position: "right", min: -1, max: 1,
-          title: { display: true, text: "Sentiment (-1 to 1)" },
-          grid: { drawOnChartArea: false },
-        },
       },
     },
   });

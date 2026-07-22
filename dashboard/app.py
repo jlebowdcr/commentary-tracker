@@ -42,6 +42,7 @@ MAX_YOUTUBE_RESULTS = 12
 MAX_REDDIT_RESULTS = 15
 MAX_TWITTER_RESULTS = 20
 TOP_N = 5
+MIN_YOUTUBE_VIEWS = 1000
 
 # Single-user local tool: stash the most recent search here for /export.md
 # rather than wiring up session/cookie storage for a one-person dashboard.
@@ -108,6 +109,12 @@ def search():
                 after=after, before=before
             )
             stats = youtube_fetch.fetch_video_stats(api_key, [v["id"]["videoId"] for v in raw_videos])
+            # Drop low-view videos before fetching transcripts (not after) so we
+            # don't pay for a transcript call on something we're about to discard.
+            raw_videos = [
+                v for v in raw_videos
+                if (stats.get(v["id"]["videoId"], {}).get("view_count") or 0) > MIN_YOUTUBE_VIEWS
+            ]
             youtube_items = [youtube_fetch.build_video_item(v, stats) for v in raw_videos]
             youtube_items = _sort_desc(youtube_items, lambda x: x["view_count"])
         except Exception as e:
@@ -190,26 +197,9 @@ def search():
     reddit_top, reddit_rest = _split_top(reddit_items)
     twitter_top, twitter_rest = _split_top(twitter_items)
 
-    # --- Stock price + sentiment chart data ---
+    # --- Stock price chart data ---
     ticker = analytics.resolve_ticker(company)
     stock_prices = analytics.fetch_stock_prices(ticker, after_date, before_date) if ticker else []
-
-    dated_texts = []
-    for item in youtube_items:
-        d = (item.get("published_at") or "")[:10]
-        if d:
-            dated_texts.append((d, _first_nonempty(item, ["transcript", "description"])))
-    for item in podcast_matches:
-        if item.get("published_date"):
-            dated_texts.append((item["published_date"], item.get("summary") or ""))
-    for item in reddit_items:
-        if item.get("published_date"):
-            dated_texts.append((item["published_date"], _first_nonempty(item, ["selftext", "title"])))
-    for item in twitter_items:
-        d = (item.get("created_at") or "")[:10]
-        if d:
-            dated_texts.append((d, item.get("text") or ""))
-    sentiment_series = analytics.daily_sentiment_series(dated_texts)
 
     # --- LLM sentiment-summary bullets (top 5 per source only, to bound cost) ---
     summary_sources = {
@@ -255,7 +245,7 @@ def search():
         "twitter_status": twitter_status,
         "summary_bullets": summary_bullets,
         "ticker": ticker,
-        "chart_data": {"prices": stock_prices, "sentiment": sentiment_series},
+        "chart_data": {"prices": stock_prices},
         "generated_at": datetime.now().isoformat(timespec="seconds"),
     }
     LAST_RESULTS["data"] = results
