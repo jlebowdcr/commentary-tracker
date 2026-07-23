@@ -10,26 +10,37 @@ import requests
 _UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 
-def resolve_ticker(company: str) -> str | None:
-    """Best-effort company-name-or-ticker -> US equity ticker symbol via
-    Yahoo's free (unauthenticated) search endpoint. Prefers US exchanges so
-    we don't land on a foreign cross-listing (e.g. MELI.BA over MELI)."""
+US_EXCHANGES = {"NMS", "NYQ", "NGM", "NCM", "ASE", "PCX", "BATS"}
+
+
+def search_companies(query: str, limit: int = 8) -> list[dict]:
+    """Look up candidate equities for a free-text query (name or ticker) via
+    Yahoo's free (unauthenticated) search endpoint. Returns a list of
+    {"ticker": ..., "name": ...} dicts, US-listed matches first (so a
+    cross-listing like MELI.BA doesn't outrank the US-listed MELI)."""
     try:
         resp = requests.get(
             "https://query1.finance.yahoo.com/v1/finance/search",
-            params={"q": company}, headers=_UA, timeout=10,
+            params={"q": query}, headers=_UA, timeout=10,
         )
         resp.raise_for_status()
         quotes = resp.json().get("quotes", [])
     except Exception:
-        return None
+        return []
 
     equities = [q for q in quotes if q.get("quoteType") == "EQUITY"]
-    if not equities:
-        return None
-    us_exchanges = {"NMS", "NYQ", "NGM", "NCM", "ASE", "PCX", "BATS"}
-    us_matches = [q for q in equities if q.get("exchange") in us_exchanges]
-    return (us_matches or equities)[0]["symbol"]
+    equities.sort(key=lambda q: q.get("exchange") not in US_EXCHANGES)  # US matches first
+    return [
+        {"ticker": q["symbol"], "name": q.get("shortname") or q.get("longname") or q["symbol"]}
+        for q in equities[:limit]
+    ]
+
+
+def resolve_company(company: str) -> dict | None:
+    """Best-effort company-name-or-ticker -> {"ticker": ..., "name": ...}.
+    Returns None if nothing resolves."""
+    matches = search_companies(company, limit=1)
+    return matches[0] if matches else None
 
 
 def fetch_stock_prices(ticker: str, after: date | None, before: date | None) -> list[dict]:

@@ -63,6 +63,36 @@ header h1 a { color: var(--accent); text-decoration: none; }
 .date-range { display: flex; gap: 1rem; }
 .date-range label { flex: 1; }
 
+.autocomplete-wrapper { position: relative; }
+.autocomplete-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin: 0.2rem 0 0;
+  padding: 0.3rem 0;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.autocomplete-suggestions[hidden] { display: none; }
+.autocomplete-suggestions li {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.autocomplete-suggestions li:hover,
+.autocomplete-suggestions li.active {
+  background: var(--card-bg);
+}
+.autocomplete-suggestions .ticker { color: var(--accent); font-weight: 600; margin-right: 0.4rem; }
+.autocomplete-suggestions .name { color: var(--muted); }
+
 label.checkbox-label {
   flex-direction: row;
   align-items: center;

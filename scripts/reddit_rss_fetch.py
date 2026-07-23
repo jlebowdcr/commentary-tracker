@@ -80,21 +80,27 @@ def save_post(conn: sqlite3.Connection, post: dict) -> bool:
     return cursor.rowcount == 1
 
 
-def search_local_posts(keyword: str, after: date | None = None, before: date | None = None,
-                        max_results: int | None = None) -> list[dict]:
-    """Search already-saved posts in data/commentary.db for a keyword in the
-    title or body, optionally restricted to a date range. Returns dicts
-    shaped for the dashboard's Reddit section (used in place of the
-    PRAW-based live search, which is blocked pending Reddit's approval)."""
+def search_local_posts(keyword: str | list[str], after: date | None = None,
+                        before: date | None = None, max_results: int | None = None) -> list[dict]:
+    """Search already-saved posts in data/commentary.db for a keyword (or any
+    of `keyword` if given a list -- e.g. a company name alongside its
+    ticker, since posters may use either) in the title or body, optionally
+    restricted to a date range. Returns dicts shaped for the dashboard's
+    Reddit section (used in place of the PRAW-based live search, which is
+    blocked pending Reddit's approval)."""
     DATA_DIR.mkdir(exist_ok=True)
-    pattern = re.compile(r"\b" + re.escape(keyword) + r"\b", re.IGNORECASE)
+    keywords = [keyword] if isinstance(keyword, str) else keyword
+    pattern = re.compile(
+        r"\b(" + "|".join(re.escape(k) for k in keywords) + r")\b", re.IGNORECASE
+    )
 
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # lets us read columns by name, e.g. row["title"]
-    rows = conn.execute(
-        "SELECT * FROM posts WHERE title LIKE ? OR body LIKE ?",
-        (f"%{keyword}%", f"%{keyword}%"),
-    ).fetchall()
+    # SQL LIKE is a fast rough pre-filter for ANY of the keywords; the regex
+    # above re-checks with word boundaries afterward for precision
+    where_clause = " OR ".join(["title LIKE ? OR body LIKE ?"] * len(keywords))
+    params = [p for k in keywords for p in (f"%{k}%", f"%{k}%")]
+    rows = conn.execute(f"SELECT * FROM posts WHERE {where_clause}", params).fetchall()
     conn.close()
 
     matches = []

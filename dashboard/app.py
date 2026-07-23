@@ -80,9 +80,23 @@ def _first_nonempty(item: dict, keys: list[str]) -> str:
     return ""
 
 
+def _is_english(language: str | None) -> bool:
+    """True if unknown (fail open -- don't drop unlabeled videos) or if the
+    language code starts with 'en' (covers en, en-US, en-GB, en-IN, ...)."""
+    return language is None or language.lower().startswith("en")
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
+
+
+@app.route("/autocomplete")
+def autocomplete():
+    query = (request.args.get("q") or "").strip()
+    if len(query) < 2:  # skip Yahoo call for 0-1 char queries -- too noisy, too fast to matter
+        return jsonify([])
+    return jsonify(analytics.search_companies(query, limit=8))
 
 
 @app.route("/search", methods=["POST"])
@@ -90,6 +104,18 @@ def search():
     company = request.form["company"].strip()
     after = request.form.get("after") or None
     before = request.form.get("before") or None
+
+    # Resolve once, up front: commentary might refer to a company by its
+    # ticker ("SPCX") or its actual name ("SpaceX"), and text search across
+    # every source below only catches whichever one is literally in the
+    # text. Searching every resolvable variant closes that gap -- e.g. a
+    # video titled "SpaceX Stock Falls..." never had the string "SPCX" in
+    # it anywhere, so a search for just "SPCX" could never have found it.
+    resolved = analytics.resolve_company(company)
+    ticker = resolved["ticker"] if resolved else None
+    search_terms = list(dict.fromkeys(  # dedupe, keep first-seen order
+        [company] + ([resolved["name"]] if resolved else []) + ([ticker] if ticker else [])
+    ))
 
     youtube_items = []
     youtube_error = None
@@ -104,16 +130,28 @@ def search():
             # results. Biasing the query toward finance content fixes this --
             # verified: "MELI" alone returned ~0/12 relevant videos, "MELI
             # stock" returned 7/8 relevant.
-            raw_videos = youtube_fetch.search_videos(
-                api_key, query=f"{company} stock", max_results=MAX_YOUTUBE_RESULTS,
-                after=after, before=before
-            )
-            stats = youtube_fetch.fetch_video_stats(api_key, [v["id"]["videoId"] for v in raw_videos])
-            # Drop low-view videos before fetching transcripts (not after) so we
-            # don't pay for a transcript call on something we're about to discard.
+            # Run one search per resolved term (ticker, name, and whatever was
+            # typed) and merge by video ID, since a video may use only one of
+            # those strings in its title/description.
+            videos_by_id = {}
+            for term in search_terms:
+                raw_videos = youtube_fetch.search_videos(
+                    api_key, query=f"{term} stock", max_results=MAX_YOUTUBE_RESULTS,
+                    after=after, before=before
+                )
+                for v in raw_videos:
+                    videos_by_id[v["id"]["videoId"]] = v
+            raw_videos = list(videos_by_id.values())
+            stats = youtube_fetch.fetch_video_stats(api_key, list(videos_by_id.keys()))
+            # Drop low-view and non-English videos before fetching transcripts
+            # (not after) so we don't pay for a transcript call on something
+            # we're about to discard. Language is only checked when YouTube
+            # actually tells us one (many uploads don't set it) -- we'd rather
+            # keep an unlabeled video than wrongly drop real English content.
             raw_videos = [
                 v for v in raw_videos
                 if (stats.get(v["id"]["videoId"], {}).get("view_count") or 0) > MIN_YOUTUBE_VIEWS
+                and _is_english(stats.get(v["id"]["videoId"], {}).get("language"))
             ]
             youtube_items = [youtube_fetch.build_video_item(v, stats) for v in raw_videos]
             youtube_items = _sort_desc(youtube_items, lambda x: x["view_count"])
@@ -121,7 +159,7 @@ def search():
             youtube_error = str(e)
 
     podcast_matches = podcast_fetch.search_feeds_by_keyword(
-        company, after=_parse_date(after), before=_parse_date(before)
+        search_terms, after=_parse_date(after), before=_parse_date(before)
     )
     # search_feeds_by_keyword returns results grouped by feed (its own iteration
     # order), not merged by date across feeds -- sort explicitly so "sorted by
@@ -144,7 +182,7 @@ def search():
         # Reddit's Responsible Builder Policy approval, so this local
         # dataset stands in for it here.
         reddit_items = reddit_rss_fetch.search_local_posts(
-            company, after=after_date, before=before_date, max_results=MAX_REDDIT_RESULTS
+            search_terms, after=after_date, before=before_date, max_results=MAX_REDDIT_RESULTS
         )
     except Exception as e:
         reddit_status = f"Error: {e}"
@@ -161,6 +199,10 @@ def search():
                            '-- use the "Last 7 days" button above to include it.')
     elif twitter_fetch.has_credentials():
         try:
+            # Deliberately NOT looping over search_terms here like the other
+            # sources -- each read counts against a real, small paid budget
+            # (X_MONTHLY_READ_BUDGET), so we search only what was typed
+            # rather than multiplying paid reads per dashboard search.
             raw = twitter_fetch.search_tweets(company, max_results=MAX_TWITTER_RESULTS)
             for t in raw:
                 if t.get("created_at"):
@@ -192,7 +234,7 @@ def search():
     twitter_top, twitter_rest = _split_top(twitter_items)
 
     # --- Stock price chart data ---
-    ticker = analytics.resolve_ticker(company)
+    # ticker was already resolved up front, alongside search_terms
     stock_prices = analytics.fetch_stock_prices(ticker, after_date, before_date) if ticker else []
 
     # --- LLM sentiment-summary bullets (top 5 per source only, to bound cost) ---

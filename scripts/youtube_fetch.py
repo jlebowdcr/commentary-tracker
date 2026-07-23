@@ -70,7 +70,13 @@ def search_videos(api_key, channel_id=None, query=None, max_results=5, after=Non
             "key": api_key,
             "part": "snippet",
             "type": "video",
-            "order": "date",
+            # A text query benefits from YouTube's own relevance ranking --
+            # sorting by date instead let a flood of near-zero-view fresh
+            # uploads crowd out substantive, well-matched videos that just
+            # weren't posted in the last few minutes. A bare channel/watchlist
+            # fetch has no query to rank by relevance against, so it stays
+            # chronological (you want a channel's latest uploads, in order).
+            "order": "relevance" if query else "date",
             "maxResults": min(50, max_results - len(items)),
         }
         if channel_id:
@@ -141,15 +147,19 @@ def fetch_video_stats(api_key, video_ids: list[str]) -> dict:
         batch = video_ids[i:i + 50]
         resp = _get_with_retry(f"{API_URL}/videos", {
             "key": api_key,
-            "part": "statistics",
+            "part": "statistics,snippet",
             "id": ",".join(batch),
         })
         for item in resp.json().get("items", []):
             s = item.get("statistics", {})
+            snippet = item.get("snippet", {})
             stats[item["id"]] = {
                 "view_count": int(s["viewCount"]) if "viewCount" in s else None,
                 "like_count": int(s["likeCount"]) if "likeCount" in s else None,
                 "comment_count": int(s["commentCount"]) if "commentCount" in s else None,
+                # uploader-set language hint, e.g. "en", "en-US", "zh-TW" --
+                # often absent, in which case this stays None (unknown)
+                "language": snippet.get("defaultAudioLanguage") or snippet.get("defaultLanguage"),
             }
     return stats
 
@@ -174,6 +184,7 @@ def build_video_item(video: dict, stats: dict | None = None, watchlist_name: str
         "view_count": video_stats.get("view_count"),
         "like_count": video_stats.get("like_count"),
         "comment_count": video_stats.get("comment_count"),
+        "language": video_stats.get("language"),
         "transcript": text,
         "transcript_language": lang,
         "transcript_translated_en": translated,

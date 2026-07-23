@@ -3,7 +3,11 @@
 <form action="/search" method="post" class="search-form loading-trigger">
   <label>
     Company or ticker
-    <input type="text" name="company" placeholder="e.g. MercadoLibre or MELI" required autofocus>
+    <div class="autocomplete-wrapper">
+      <input type="text" name="company" placeholder="e.g. MercadoLibre or MELI"
+             class="company-autocomplete" autocomplete="off" required autofocus>
+      <ul class="autocomplete-suggestions" hidden></ul>
+    </div>
   </label>
   <label class="checkbox-label">
     <input type="checkbox" class="last-7-days-checkbox">

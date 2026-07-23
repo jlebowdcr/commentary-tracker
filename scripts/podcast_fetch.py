@@ -50,13 +50,18 @@ def _extract_audio_url(entry) -> str | None:
     return None
 
 
-def search_feeds_by_keyword(keyword: str, after: date | None = None, before: date | None = None,
-                             feeds: list | None = None) -> list[dict]:
+def search_feeds_by_keyword(keyword: str | list[str], after: date | None = None,
+                             before: date | None = None, feeds: list | None = None) -> list[dict]:
     """Scan every feed in `feeds` (defaults to the curated watchlist) for
-    episodes whose title or summary mention `keyword`, within an optional
-    date range. Metadata only -- never transcribes."""
+    episodes whose title or summary mention `keyword` (or any of `keyword`
+    if given a list -- e.g. a company name alongside its ticker, since
+    commentary may use either), within an optional date range. Metadata
+    only -- never transcribes."""
     feeds = feeds if feeds is not None else load_feed_list()
-    pattern = re.compile(r"\b" + re.escape(keyword) + r"\b", re.IGNORECASE)
+    keywords = [keyword] if isinstance(keyword, str) else keyword
+    pattern = re.compile(
+        r"\b(" + "|".join(re.escape(k) for k in keywords) + r")\b", re.IGNORECASE
+    )
     matches = []
     for feed_entry in feeds:
         parsed = feedparser.parse(feed_entry["feed"])

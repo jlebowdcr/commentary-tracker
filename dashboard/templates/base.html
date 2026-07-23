@@ -53,6 +53,93 @@
         beforeInput.readOnly = checkbox.checked;
       });
     });
+
+    // Company/ticker autocomplete: as the user types, ask the backend for
+    // matching companies (it proxies Yahoo's ticker-search endpoint) and
+    // show them as a clickable dropdown, so you don't have to already know
+    // the exact ticker spelling to search effectively.
+    document.querySelectorAll(".company-autocomplete").forEach(function (input) {
+      const list = input.parentElement.querySelector(".autocomplete-suggestions");
+      let debounceTimer = null;
+      let activeIndex = -1;
+
+      function closeList() {
+        list.hidden = true;
+        list.innerHTML = "";
+        activeIndex = -1;
+      }
+
+      function selectItem(item) {
+        input.value = item.ticker;
+        closeList();
+      }
+
+      function renderSuggestions(matches) {
+        list.innerHTML = "";
+        if (!matches.length) {
+          closeList();
+          return;
+        }
+        matches.forEach(function (item) {
+          const li = document.createElement("li");
+          const tickerSpan = document.createElement("span");
+          tickerSpan.className = "ticker";
+          tickerSpan.textContent = item.ticker;
+          const nameSpan = document.createElement("span");
+          nameSpan.className = "name";
+          nameSpan.textContent = item.name;
+          li.appendChild(tickerSpan);
+          li.appendChild(nameSpan);
+          li.addEventListener("mousedown", function (e) {
+            e.preventDefault();  // fires before the input's blur event, so the click isn't lost
+            selectItem(item);
+          });
+          list.appendChild(li);
+        });
+        list.hidden = false;
+      }
+
+      input.addEventListener("input", function () {
+        clearTimeout(debounceTimer);
+        const query = input.value.trim();
+        if (query.length < 2) {
+          closeList();
+          return;
+        }
+        // Wait 300ms after typing stops before calling the backend, so a
+        // fast typist doesn't fire off a request per keystroke.
+        debounceTimer = setTimeout(function () {
+          fetch("/autocomplete?q=" + encodeURIComponent(query))
+            .then(function (resp) { return resp.json(); })
+            .then(renderSuggestions)
+            .catch(function () { closeList(); });
+        }, 300);
+      });
+
+      input.addEventListener("keydown", function (e) {
+        const items = list.querySelectorAll("li");
+        if (list.hidden || !items.length) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          activeIndex = (activeIndex + 1) % items.length;
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          activeIndex = (activeIndex - 1 + items.length) % items.length;
+        } else if (e.key === "Enter" && activeIndex >= 0) {
+          e.preventDefault();
+          items[activeIndex].dispatchEvent(new Event("mousedown"));
+          return;
+        } else if (e.key === "Escape") {
+          closeList();
+          return;
+        } else {
+          return;
+        }
+        items.forEach(function (li, i) { li.classList.toggle("active", i === activeIndex); });
+      });
+
+      input.addEventListener("blur", closeList);
+    });
   </script>
 </body>
 </html>
