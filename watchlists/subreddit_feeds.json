@@ -1,0 +1,34 @@
+[
+  { "subreddit": "investing", "feed": "https://www.reddit.com/r/investing/new/.rss" },
+  { "subreddit": "stocks", "feed": "https://www.reddit.com/r/stocks/new/.rss" },
+  { "subreddit": "StockMarket", "feed": "https://www.reddit.com/r/StockMarket/new/.rss" },
+  { "subreddit": "SecurityAnalysis", "feed": "https://www.reddit.com/r/SecurityAnalysis/new/.rss" },
+  { "subreddit": "ValueInvesting", "feed": "https://www.reddit.com/r/ValueInvesting/new/.rss" },
+  { "subreddit": "Bogleheads", "feed": "https://www.reddit.com/r/Bogleheads/new/.rss" },
+  { "subreddit": "dividends", "feed": "https://www.reddit.com/r/dividends/new/.rss" },
+  { "subreddit": "options", "feed": "https://www.reddit.com/r/options/new/.rss" },
+  { "subreddit": "finance", "feed": "https://www.reddit.com/r/finance/new/.rss" },
+  { "subreddit": "economics", "feed": "https://www.reddit.com/r/economics/new/.rss" },
+  { "subreddit": "economy", "feed": "https://www.reddit.com/r/economy/new/.rss" },
+
+  { "subreddit": "semiconductors", "feed": "https://www.reddit.com/r/semiconductors/new/.rss" },
+  { "subreddit": "hardware", "feed": "https://www.reddit.com/r/hardware/new/.rss" },
+  { "subreddit": "technology", "feed": "https://www.reddit.com/r/technology/new/.rss" },
+  { "subreddit": "AMD_Stock", "feed": "https://www.reddit.com/r/AMD_Stock/new/.rss" },
+  { "subreddit": "NVDA_Stock", "feed": "https://www.reddit.com/r/NVDA_Stock/new/.rss" },
+  { "subreddit": "ASML", "feed": "https://www.reddit.com/r/ASML/new/.rss" },
+  { "subreddit": "TSMC", "feed": "https://www.reddit.com/r/TSMC/new/.rss" },
+  { "subreddit": "artificial", "feed": "https://www.reddit.com/r/artificial/new/.rss" },
+  { "subreddit": "LocalLLaMA", "feed": "https://www.reddit.com/r/LocalLLaMA/new/.rss" },
+
+  { "subreddit": "wallstreetbets", "feed": "https://www.reddit.com/r/wallstreetbets/new/.rss" },
+  { "subreddit": "wallstreetbetsOGs", "feed": "https://www.reddit.com/r/wallstreetbetsOGs/new/.rss" },
+  { "subreddit": "pennystocks", "feed": "https://www.reddit.com/r/pennystocks/new/.rss" },
+  { "subreddit": "Shortsqueeze", "feed": "https://www.reddit.com/r/Shortsqueeze/new/.rss" },
+  { "subreddit": "Daytrading", "feed": "https://www.reddit.com/r/Daytrading/new/.rss" },
+  { "subreddit": "swingtrading", "feed": "https://www.reddit.com/r/swingtrading/new/.rss" },
+
+  { "subreddit": "SPACs", "feed": "https://www.reddit.com/r/SPACs/new/.rss" },
+  { "subreddit": "earnings", "feed": "https://www.reddit.com/r/earnings/new/.rss" },
+  { "subreddit": "Vitards", "feed": "https://www.reddit.com/r/Vitards/new/.rss" }
+]

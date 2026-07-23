@@ -1,5 +1,7 @@
 .env
 .x_usage.json
 output/
+data/*
+!data/commentary.db
 __pycache__/
 *.pyc

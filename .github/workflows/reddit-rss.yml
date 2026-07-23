@@ -1,0 +1,35 @@
+name: Reddit RSS collection
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # 06:00 UTC daily = 7 AM UK time (BST); drifts to 6 AM local in winter (GMT)
+  workflow_dispatch: {}    # adds a manual "Run workflow" button on GitHub, for testing on demand
+
+permissions:
+  contents: write          # needed so this workflow can commit the updated database back to the repo
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install feedparser requests
+
+      - name: Run the collector
+        run: python scripts/reddit_rss_fetch.py
+
+      - name: Commit and push updated database
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/commentary.db
+          git diff --staged --quiet || git commit -m "Daily Reddit RSS collection"
+          git push

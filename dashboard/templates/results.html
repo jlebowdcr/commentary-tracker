@@ -154,7 +154,7 @@
 
   <section class="column">
     <h3>Reddit ({{ reddit_top|length + reddit_rest|length }})</h3>
-    <p class="sort-note">Sorted by score</p>
+    <p class="sort-note">Sorted by most recent &middot; from your saved Reddit RSS data</p>
     {% if reddit_status %}
       <p class="empty">{{ reddit_status }}</p>
     {% endif %}
@@ -164,7 +164,7 @@
     {% for item in reddit_top %}
       <article class="card">
         <h4><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h4>
-        <p class="meta">r/{{ item.subreddit }} &middot; {{ item.author }} &middot; {{ item.published_date }} &middot; {{ item.score }} pts</p>
+        <p class="meta">r/{{ item.subreddit }} &middot; {{ item.author }} &middot; {{ item.published_date }}{% if item.score is not none %} &middot; {{ item.score }} pts{% endif %}</p>
         {% if item.selftext %}
           <details>
             <summary>Post text</summary>
@@ -187,7 +187,7 @@
         {% for item in reddit_rest %}
           <article class="card">
             <h4><a href="{{ item.url }}" target="_blank">{{ item.title }}</a></h4>
-            <p class="meta">r/{{ item.subreddit }} &middot; {{ item.author }} &middot; {{ item.published_date }} &middot; {{ item.score }} pts</p>
+            <p class="meta">r/{{ item.subreddit }} &middot; {{ item.author }} &middot; {{ item.published_date }}{% if item.score is not none %} &middot; {{ item.score }} pts{% endif %}</p>
             {% if item.selftext %}
               <details>
                 <summary>Post text</summary>

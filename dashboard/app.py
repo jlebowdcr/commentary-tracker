@@ -19,7 +19,7 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 import podcast_fetch  # noqa: E402
-import reddit_fetch  # noqa: E402
+import reddit_rss_fetch  # noqa: E402
 import twitter_fetch  # noqa: E402
 import youtube_fetch  # noqa: E402
 
@@ -137,23 +137,17 @@ def search():
 
     reddit_items = []
     reddit_status = None
-    if reddit_fetch.has_credentials():
-        try:
-            raw = reddit_fetch.search_reddit(company, max_results=MAX_REDDIT_RESULTS)
-            for r in raw:
-                d = datetime.utcfromtimestamp(r["created_utc"]).date()
-                if after_date and d < after_date:
-                    continue
-                if before_date and d > before_date:
-                    continue
-                r["published_date"] = d.isoformat()
-                reddit_items.append(r)
-            reddit_items = _sort_desc(reddit_items, lambda x: x["score"])
-        except Exception as e:
-            reddit_status = f"Error: {e}"
-    else:
-        reddit_status = ("Reddit API access is pending Reddit's manual approval "
-                          "under the Responsible Builder Policy.")
+    try:
+        # Sourced from data/commentary.db (scripts/reddit_rss_fetch.py), not
+        # a live API call -- results are only as fresh as your last run of
+        # that script. The PRAW-based live search is blocked pending
+        # Reddit's Responsible Builder Policy approval, so this local
+        # dataset stands in for it here.
+        reddit_items = reddit_rss_fetch.search_local_posts(
+            company, after=after_date, before=before_date, max_results=MAX_REDDIT_RESULTS
+        )
+    except Exception as e:
+        reddit_status = f"Error: {e}"
 
     twitter_items = []
     twitter_status = None
