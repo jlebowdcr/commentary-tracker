@@ -2,7 +2,7 @@ services:
   - type: web
     name: commentary-tracker-dashboard
     runtime: python
-    buildCommand: pip install -r dashboard/requirements.txt
+    buildCommand: pip install -r requirements.txt -r dashboard/requirements.txt
     startCommand: gunicorn --chdir dashboard app:app
     autoDeploy: true
     envVars:
