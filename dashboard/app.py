@@ -8,7 +8,9 @@ Run with:
   python app.py
 Then open http://127.0.0.1:5050
 """
+import json
 import os
+import secrets
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -25,7 +27,33 @@ import youtube_fetch  # noqa: E402
 
 import analytics
 
+podcast_fetch.load_env()  # load .env once at startup, not just inside /search --
+                          # auth (below) needs it available for every route
+
 app = Flask(__name__)
+
+
+@app.before_request
+def require_auth():
+    """Basic-auth gate for shared/hosted deployments. Only activates when
+    DASHBOARD_USERNAME/PASSWORD are actually set (e.g. on Render) -- local
+    runs with no .env entry for these stay wide open, same as before."""
+    expected_user = os.environ.get("DASHBOARD_USERNAME")
+    expected_pass = os.environ.get("DASHBOARD_PASSWORD")
+    if not expected_user or not expected_pass:
+        return  # auth not configured -- don't lock anyone out of a local dev run
+
+    auth = request.authorization
+    valid = (
+        auth is not None
+        and secrets.compare_digest(auth.username or "", expected_user)
+        and secrets.compare_digest(auth.password or "", expected_pass)
+    )
+    if not valid:
+        return Response(
+            "Authentication required", 401,
+            {"WWW-Authenticate": 'Basic realm="Commentary Tracker"'},
+        )
 
 
 @app.template_filter("format_count")
@@ -86,6 +114,17 @@ def _is_english(language: str | None) -> bool:
     return language is None or language.lower().startswith("en")
 
 
+def _load_youtube_watchlist() -> list[dict]:
+    """Unlike youtube_fetch.load_watchlist() (which sys.exit()s if the file
+    is missing -- fine for a CLI, fatal for a running web server), this
+    fails open to an empty list so a missing/malformed watchlist file just
+    means no curated channels get checked, not a crashed dashboard."""
+    try:
+        return json.loads(youtube_fetch.DEFAULT_WATCHLIST.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -119,7 +158,6 @@ def search():
 
     youtube_items = []
     youtube_error = None
-    podcast_fetch.load_env()
     api_key = os.environ.get("YOUTUBE_API_KEY")
     if not api_key:
         youtube_error = "YOUTUBE_API_KEY not configured in .env"
@@ -141,6 +179,24 @@ def search():
                 )
                 for v in raw_videos:
                     videos_by_id[v["id"]["videoId"]] = v
+
+            # Also check each curated channel (watchlists/youtube_channels.json)
+            # directly: a video from a trusted source like Bloomberg or CNBC
+            # might not rank highly enough in the general web-wide search to
+            # place in the top MAX_YOUTUBE_RESULTS, even though it's exactly
+            # the kind of source this dashboard is built to surface. Scoped to
+            # the primary term only (not every resolved variant) to keep
+            # quota cost bounded -- each channel search is its own 100-unit
+            # API call, and this runs once per channel on every dashboard search.
+            primary_term = search_terms[0]
+            for channel in _load_youtube_watchlist():
+                channel_videos = youtube_fetch.search_videos(
+                    api_key, channel_id=channel["channel_id"], query=f"{primary_term} stock",
+                    max_results=5, after=after, before=before
+                )
+                for v in channel_videos:
+                    videos_by_id[v["id"]["videoId"]] = v
+
             raw_videos = list(videos_by_id.values())
             stats = youtube_fetch.fetch_video_stats(api_key, list(videos_by_id.keys()))
             # Drop low-view and non-English videos before fetching transcripts

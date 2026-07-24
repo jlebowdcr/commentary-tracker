@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: commentary-tracker-dashboard
+    runtime: python
+    rootDir: dashboard
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    autoDeploy: true
+    envVars:
+      # sync: false means "set this manually in Render's dashboard" --
+      # nothing here is ever stored in git.
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: DASHBOARD_USERNAME
+        sync: false
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      # X_BEARER_TOKEN is deliberately NOT listed here -- see README's
+      # "Hosting" section for why the hosted copy doesn't get X/Twitter access.
