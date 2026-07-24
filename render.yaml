@@ -2,9 +2,8 @@ services:
   - type: web
     name: commentary-tracker-dashboard
     runtime: python
-    rootDir: dashboard
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    buildCommand: pip install -r dashboard/requirements.txt
+    startCommand: gunicorn --chdir dashboard app:app
     autoDeploy: true
     envVars:
       # sync: false means "set this manually in Render's dashboard" --
