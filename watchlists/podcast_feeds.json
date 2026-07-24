@@ -33,5 +33,100 @@
     "name": "We Study Billionaires",
     "feed": "https://feeds.megaphone.fm/PPLLC8974708240",
     "description": "The Investor's Podcast Network's flagship value-investing show."
+  },
+  {
+    "name": "Macro Musings",
+    "feed": "https://rss.libsyn.com/shows/138806/destinations/865793.xml",
+    "description": "David Beckworth (Mercatus Center) on monetary policy -- academic-leaning."
+  },
+  {
+    "name": "Forward Guidance",
+    "feed": "https://feeds.megaphone.fm/forwardguidance",
+    "description": "Blockworks -- rates, liquidity, and Fed plumbing."
+  },
+  {
+    "name": "The Market Huddle",
+    "feed": "https://markethuddle.com/feed/podcast/",
+    "description": "Patrick Ceresna and Kevin Muir on markets and macro."
+  },
+  {
+    "name": "Top Traders Unplugged",
+    "feed": "https://feeds.captivate.fm/top-traders-unplugged/",
+    "description": "Niels Kaastrup-Larsen -- systematic/CTA and trend-following perspective."
+  },
+  {
+    "name": "Bloomberg Surveillance",
+    "feed": "https://www.omnycontent.com/d/playlist/e73c998e-6e60-432f-8610-ae210140c5b1/8e704079-ca57-4eac-9741-ae27003e2b7f/9739700c-72c3-4176-ae55-ae27003e2b96/podcast.rss",
+    "description": "Bloomberg's daily flagship markets show -- high volume."
+  },
+  {
+    "name": "Value Investing with Legends",
+    "feed": "https://rss.libsyn.com/shows/178055/destinations/1207712.xml",
+    "description": "Columbia Business School -- interviews with veteran value investors."
+  },
+  {
+    "name": "The Acquirers Podcast",
+    "feed": "https://anchor.fm/s/9603714/podcast/rss",
+    "description": "Tobias Carlisle -- deep value investing."
+  },
+  {
+    "name": "Behind the Balance Sheet",
+    "feed": "https://anchor.fm/s/5f616d54/podcast/rss",
+    "description": "Stephen Clapham -- forensic/fundamental equity analysis."
+  },
+  {
+    "name": "Yet Another Value Podcast",
+    "feed": "https://anchor.fm/s/c628cb7c/podcast/rss",
+    "description": "Andrew Walker -- special situations and event-driven investing."
+  },
+  {
+    "name": "Acquired",
+    "feed": "https://feeds.transistor.fm/acquired",
+    "description": "Ben Gilbert and David Rosenthal -- long-form company histories, several semiconductor episodes."
+  },
+  {
+    "name": "The Circuit",
+    "feed": "https://feeds.transistor.fm/the-circuit",
+    "description": "Ben Bajarin and Jay Goldberg -- the semiconductor-industry podcast."
+  },
+  {
+    "name": "Sharp Tech with Ben Thompson",
+    "feed": "https://sharptech.fm/feed/podcast",
+    "description": "Ben Thompson and Andrew Sharp -- tech strategy and business models (Stratechery's companion podcast)."
+  },
+  {
+    "name": "Dwarkesh Podcast",
+    "feed": "https://apple.dwarkesh-podcast.workers.dev/feed.rss",
+    "description": "Dwarkesh Patel -- AI capex, compute, and increasingly market-relevant AI-industry interviews."
+  },
+  {
+    "name": "No Priors",
+    "feed": "https://feeds.megaphone.fm/nopriors",
+    "description": "Conviction -- AI industry perspective."
+  },
+  {
+    "name": "Latent Space",
+    "feed": "https://api.substack.com/feed/podcast/1084089.rss",
+    "description": "The AI Engineer Podcast -- AI industry, more technical/builder-focused."
+  },
+  {
+    "name": "Goldman Sachs Exchanges",
+    "feed": "https://feeds.megaphone.fm/GLD9218176758",
+    "description": "Goldman Sachs -- house views across markets and macro."
+  },
+  {
+    "name": "Capital Allocators",
+    "feed": "https://rss.libsyn.com/shows/94820/destinations/482814.xml",
+    "description": "Ted Seides -- institutional allocator perspective."
+  },
+  {
+    "name": "The Twenty Minute VC",
+    "feed": "https://rss.libsyn.com/shows/61840/destinations/240976.xml",
+    "description": "Harry Stebbings -- venture capital and private markets."
+  },
+  {
+    "name": "All-In Podcast",
+    "feed": "https://rss.libsyn.com/shows/254861/destinations/1928300.xml",
+    "description": "Chamath, Jason Calacanis, David Sacks, and David Friedberg -- tech/VC/macro roundtable."
   }
 ]
